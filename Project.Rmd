@@ -2,7 +2,9 @@
 title: "Mini Project 1"
 author: "Ty Hawkes, Evan Miller, Talmage Hilton"
 date: "`r Sys.Date()`"
-output: pdf_document
+output:
+ pdf_document:
+    fig_caption: yes
 fontsize: 11pt
 geometry: margin=1in
 header-includes:
@@ -32,7 +34,7 @@ The dataset consists of 250,000 observations and 12 variables. Due to the sensit
 
 # Assessment of Normality
 
-```{r, echo = FALSE, fig.height = 1.5, fig.width = 6.5}
+```{r fig1, echo = FALSE, fig.height = 1.5, fig.width = 6.5, fig.cap="Example Histograms of Original Variables"}
 # histograms for each variable par(mfrow=c(3,4))
 par(mfrow=c(1,4))
 for (i in 1:4) {
@@ -54,7 +56,7 @@ $$
 
 To choose a $\lambda$ for an optimal transformation of each variable, the log likelihood under a normal distribution is maximized with respect to $\lambda$. To improve the normality of the distributions, we will apply the Yeo-Johnson transformation to each variable and then reassess the normality using histograms and QQ plots with confidence intervals.
 
-```{r, echo = FALSE, message = FALSE, fig.width = 6.5, fig.height = 1.5}
+```{r fig2, echo = FALSE, message = FALSE, fig.width = 6.5, fig.height = 1.5, fig.cap="X1 Example of Yeo-Johnson Transformation"}
 library(MASS)
 library(car)
 
@@ -126,7 +128,7 @@ $$
 \text{ where } \mu \text{ is the mean vector and } S \text{ is the covariance matrix.}
 $$
 
-```{r, echo = FALSE, fig.height = 3}
+```{r fig3, echo = FALSE, fig.height = 3, fig.cap="Original vs Yeo-Johnson Transformed QQ-Plots"}
 mahal_plot_normal <- function(df, n_points = 500, cex = .3, xmax = NULL, ymax = NULL, name = "") {
   p <- ncol(df)
   n <- nrow(df)
@@ -199,6 +201,9 @@ top_250_table <- data.frame(
   Row_Number = top_250_indices,
   Mahalanobis_Distance = D2[top_250_indices]
 )
+
+is_fraud <- as.integer(seq_len(nrow(df)) %in% top_250_indices)
+
 ```
 
 We identify potential fraudulent transactions in the data set by identifying outliers, assuming multivariate normality in the data. As was previously described, after transforming the data, there is still reason to believe that this data is not multivariate normal, but we will move forward with this assumption in order to employ Mahalanobis distance as a method to detect the outliers.
@@ -225,6 +230,10 @@ While we are confident in the validity of our results, future work could focus o
 
 # References
 
+Yeo, I.-K., & Johnson, R. A. (2000). A New Family of Power Transformations to Improve Normality or Symmetry. Biometrika, 87(4), 954–959.
+
+Mahalanobis, P.C. (1936) On the Generalized Distance in Statistics. Proceedings of the National Institute of Science of India, 2, 49-55.
+
 
 # Appendix
 
@@ -233,6 +242,6 @@ lambda_df <- data.frame(Variable = paste0("X", 1:ncol(df)), Lambda = lambda_vect
 knitr::kable(lambda_df, caption = "Yeo-Johnson Lambda Values for Each Variable")
 ```
 
-```{r, echo = FALSE}
+```{r, eval = FALSE, echo = FALSE}
 knitr::kable(top_250_table, caption = "All 250 Fraudulent Transactions")
 ```
