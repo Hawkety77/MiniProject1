@@ -117,7 +117,7 @@ qq_plot_with_ci(df_transformed$X1, n_highlight = 500, name = "Transformed")
 
 The figure above shows a histogram and QQ plot of X1 before and after the Yeo-Johnson transformation. Initially, X1 exhibited right skewness and very heavy tails. After applying the Yeo-Johnson transformation, the distribution of X1 appears more symmetric and less heavy-tailed. The QQ plot indicates that while the transformation has improved the fit to a normal distribution, there are still deviations from normality, particularly in the tails. While we would consider this transformation a step toward normality, it is still not perfectly normal.
 
-Each of the other variables exhibited similar improvements in normality after the Yeo-Johnson transformation, but none achieved perfect normality. The heavy-tailed nature of the distributions persists to some extent across all variables. Their $\lambda$ values are provided in Table 2 of the appendix.
+Each of the other variables exhibited similar improvements in normality after the Yeo-Johnson transformation, but none achieved perfect normality. The heavy-tailed nature of the distributions persists to some extent across all variables.
 
 To further assess the multivariate normality of the dataset, we will use Mahalanobis distance-based QQ plots. The Mahalanobis distance measures how far each observation is from the mean of the distribution, taking into account the correlations between variables. If the data were multivariate normal, the squared Mahalanobis distances would follow a Chi-square distribution with degrees of freedom equal to the number of variables. Mahalanobis distance is defined as follows:
 
@@ -221,7 +221,7 @@ Using Mahalanobis Distance as our outlier detection measure, we found that obser
 
 # Conclusion
 
-The need for accurate fraud detection methods is critical as billions of dollars are lost to fraud in the US every year. Using a dataset of 250,000 financial transactions, we applied data transformations to reduce skewness and demonstrated that the transformed data more closely satisfied the assumptions of a multivariate normal distribution. Under this framework, we employed Mahalanobis Distance to identify outliers and flagged 250 transactions as the most likely to be fraudulent. These transactions are reported in Table 3 of the Appendix.
+The need for accurate fraud detection methods is critical as billions of dollars are lost to fraud in the US every year. Using a dataset of 250,000 financial transactions, we applied data transformations to reduce skewness and demonstrated that the transformed data more closely satisfied the assumptions of a multivariate normal distribution. Under this framework, we employed Mahalanobis Distance to identify outliers and flagged 250 transactions as the most likely to be fraudulent.
 
 While we are confident in the validity of our results, future work could focus on additional transformations to further align the data with multivariate normality. Moreover, incorporating complementary approaches—such as PCA or ensemble methods that combine multiple outlier detection techniques—would provide a stronger and more robust basis for identifying potentially fraudulent activity.
 
@@ -234,10 +234,7 @@ Yeo, I.-K., & Johnson, R. A. (2000). A New Family of Power Transformations to Im
 
 Mahalanobis, P.C. (1936) On the Generalized Distance in Statistics. Proceedings of the National Institute of Science of India, 2, 49-55.
 
-
-# Appendix
-
-```{r, echo = FALSE}
+```{r, eval = FALSE, echo = FALSE}
 lambda_df <- data.frame(Variable = paste0("X", 1:ncol(df)), Lambda = lambda_vect)
 knitr::kable(lambda_df, caption = "Yeo-Johnson Lambda Values for Each Variable")
 ```
