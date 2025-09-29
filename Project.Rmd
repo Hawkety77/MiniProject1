@@ -1,27 +1,45 @@
 ---
 title: "Mini Project 1"
+author: "Ty Hawkes, Evan Miller, Talmage Hilton"
+date: "`r Sys.Date()`"
 output: pdf_document
+fontsize: 11pt
+geometry: margin=1in
+header-includes:
+  - \usepackage{setspace}
+  - \singlespacing
 ---
 
 ```{r, include=FALSE}
 df <- vroom::vroom('data/fraud.csv', col_names = FALSE)
 df_transformed <- df
 ```
+
 # Abstract
+
+Financial fraud accounts for billions of dollars in losses each year, highlighting the need for effective detection strategies. In this study, we analyze a dataset of 250,000 anonymized financial transactions collected over a two-day period, each described by 12 numerical variables. Because the dataset is unlabeled, we employ unsupervised learning methods based on outlier detection. Specifically, we apply data transformations to reduce skewness and approximate multivariate normality, enabling the use of Mahalanobis Distance to identify anomalous transactions.
+
+Our analysis revealed that observation 130,115 had the largest Mahalanobis Distance ($\approx$ 16,233), making it the most likely fraudulent transaction. The 250th flagged transaction had a Mahalanobis Distance of 504.76. Across the 250 identified cases, the mean Mahalanobis Distance was 1,158.05, with a median of 1,078.99, suggesting a cluster of suspicious transactions with some extreme outliers. These results are consistent with the assumption that fraud manifests as statistical anomalies within otherwise regular financial data.
+
+
 # Introduction
-In 2024, $12.5 billion dollars were lost to fraud in the United States alone, according to the Federal Trade Commission (FTC). This staggering figure underscores the critical need for effective fraud detection mechanisms. In this analysis, we will use a dataset containing 250,000 financial transactions over a two-day period to try and identify 250 of the <500 fraudulent transactions. To identify these transactions, we will use outlier detection methods under a multivariate normal distribution assumption. 
+
+In 2024, \$12.5 billion dollars were lost to fraud in the United States alone, according to the Federal Trade Commission (FTC). This staggering figure underscores the critical need for effective fraud detection mechanisms. In this analysis, we will use a dataset containing 250,000 financial transactions over a two-day period to try and identify 250 of the \<500 fraudulent transactions. To identify these transactions, we will use outlier detection methods under a multivariate normal distribution assumption.
 
 # Data Description
-The dataset consists of 250,000 observations and 12 variables. Due to the sensitive nature of the data, the variables are anonymized and labeled as X1 to X12. Each observation represents a financial transaction, with the variables capturing various attributes of these transactions. This dataset is *not labeled*, meaning we do not have prior knowledge of which transactions are fraudulent. This lack of labels necessitates the use of unsupervised learning techniques for fraud detection.
+
+The dataset consists of 250,000 observations and 12 variables. Due to the sensitive nature of the data, the variables are anonymized and labeled as X1 to X12. Each observation represents a financial transaction, with the variables capturing various attributes of these transactions. This dataset is *not labeled*, meaning we do not have prior knowledge of which transactions are fraudulent. This lack of labeling necessitates the use of unsupervised learning techniques for fraud detection.
 
 # Assessment of Normality
-```{r, echo = FALSE}
+
+```{r, echo = FALSE, fig.height = 1.5, fig.width = 6.5}
 # histograms for each variable par(mfrow=c(3,4))
-par(mfrow=c(3,4))
-for (i in 1:ncol(df)) {
+par(mfrow=c(1,4))
+for (i in 1:4) {
   hist(df[[i]], main=paste("Histogram of X", i, sep=""), xlab=paste("X", i, sep=""), col="lightblue", border="black", breaks = 200)
 }
 ```
+
 An initial assessment of the data reveals that the variables do not follow a normal distribution, as evidenced by the histograms above. In general, the distributions tend to be very heavy tailed and skewed. To improve the skewness of each variable individually, we will apply a Yeo-Johnson transformation to each variable.
 
 The Yeo-Johnson transformation is a power transformation that can handle both positive and negative values, making it more suitable for our dataset than a Box-Cox transformation. The Yeo-Johnson transformation is defined as follows:
@@ -33,9 +51,12 @@ Y(\lambda) = \begin{cases}
 -\log(|y| + 1) & \text{if } y < 0, \lambda = 2
 \end{cases}
 $$
-To choose a lambda for an optimal transformation of each variable, the log likelihood under a normal distribution is maximized with respect to lambda. To improve the normality of the distributions, we will apply the Yeo-Johnson transformation to each variable and then reassess the normality using histograms and QQ plots with confidence intervals.
-```{r, echo = FALSE}
+
+To choose a $\lambda$ for an optimal transformation of each variable, the log likelihood under a normal distribution is maximized with respect to $\lambda$. To improve the normality of the distributions, we will apply the Yeo-Johnson transformation to each variable and then reassess the normality using histograms and QQ plots with confidence intervals.
+
+```{r, echo = FALSE, message = FALSE, fig.width = 6.5, fig.height = 1.5}
 library(MASS)
+library(car)
 
 # Yeo-Johnson transformation function
 yeo_johnson <- function(y) {
@@ -46,7 +67,7 @@ yeo_johnson <- function(y) {
   return(list(y = y_trans, lambda = lambda_best))
 }
 
-qq_plot_with_ci <- function(x, conf = 0.95, n_highlight = 500) {
+qq_plot_with_ci <- function(x, conf = 0.95, n_highlight = 500, name = "") {
   n <- length(x)
   x_sorted <- sort(x)
   
@@ -66,7 +87,7 @@ qq_plot_with_ci <- function(x, conf = 0.95, n_highlight = 500) {
   highlight_idx <- order(distance, decreasing = TRUE)[1:min(n_highlight, n)]
   
   # Plot
-  plot(q_theoretical, q_sample, main = paste0("QQ Plot with ", conf*100, "% CI"),
+  plot(q_theoretical, q_sample, main = paste0("X1 ", name),
        xlab = "Theoretical Quantiles", ylab = "Sample Quantiles", pch = 19, col = "grey20")
   abline(0, 1, col = "red", lwd = 2)
   lines(q_theoretical, upper, col = "darkgreen", lty = 2)
@@ -85,30 +106,27 @@ for (i in 1:ncol(df)) {
 }
 
 # histogram and qq plot before and after transformation
-par(mfrow=c(2,2))
-hist(df$X1, main="Histogram of X1 (Before)", xlab="X1", col="lightblue", border="black", breaks = 200)
-qq_plot_with_ci(df$X1, n_highlight = 500)
-hist(df_transformed$X1, main="Histogram of X1 (After)", xlab="X1", col="lightblue", border="black", breaks = 200)
-qq_plot_with_ci(df_transformed$X1, n_highlight = 500)
-```
-The figure above shows a histogram and qq plot of X1 before and after the Yeo-Johnson transformation. Initially, X1 exhibited right skewness and very heavy tails. After applying the Yeo-Johnson transformation, the distribution of X1 appears more symmetric and less heavy-tailed. The qq plot indicates that while the transformation has improved the fit to a normal distribution, there are still deviations from normality, particularly in the tails. While we would consider this transformation a step toward normality, it is still not perfectly normal. 
-
-Each of the other variables exhibited similar improvements in normality after the Yeo-Johnson transformation, but none achieved perfect normality. The heavy-tailed nature of the distributions persists to some extent across all variables. Their lambda values are recorded in the table below:
-
-```{r}
-lambda_df <- data.frame(Variable = paste0("X", 1:ncol(df)), Lambda = lambda_vect)
-knitr::kable(lambda_df, caption = "Yeo-Johnson Lambda Values for Each Variable")
+par(mfrow=c(1,4))
+hist(df$X1, main="X1 Original", xlab="X1", col="lightblue", border="black", breaks = 200)
+qq_plot_with_ci(df$X1, n_highlight = 500, name = "Original")
+hist(df_transformed$X1, main="X1 Transformed", xlab="X1", col="lightblue", border="black", breaks = 200)
+qq_plot_with_ci(df_transformed$X1, n_highlight = 500, name = "Transformed")
 ```
 
+The figure above shows a histogram and QQ plot of X1 before and after the Yeo-Johnson transformation. Initially, X1 exhibited right skewness and very heavy tails. After applying the Yeo-Johnson transformation, the distribution of X1 appears more symmetric and less heavy-tailed. The QQ plot indicates that while the transformation has improved the fit to a normal distribution, there are still deviations from normality, particularly in the tails. While we would consider this transformation a step toward normality, it is still not perfectly normal.
 
-To further assess the multivariate normality of the dataset, we will use Mahalanobis distance-based Q-Q plots. The Mahalanobis distance measures how far each observation is from the mean of the distribution, taking into account the correlations between variables. If the data were multivariate normal, the squared Mahalanobis distances would follow a Chi-square distribution with degrees of freedom equal to the number of variables. Mahalanobis distance is defined as follows:
+Each of the other variables exhibited similar improvements in normality after the Yeo-Johnson transformation, but none achieved perfect normality. The heavy-tailed nature of the distributions persists to some extent across all variables. Their $\lambda$ values are provided in Table 2 of the appendix.
+
+To further assess the multivariate normality of the dataset, we will use Mahalanobis distance-based QQ plots. The Mahalanobis distance measures how far each observation is from the mean of the distribution, taking into account the correlations between variables. If the data were multivariate normal, the squared Mahalanobis distances would follow a Chi-square distribution with degrees of freedom equal to the number of variables. Mahalanobis distance is defined as follows:
 
 $$
-D^2 = (x - \mu)^T S^{-1} (x - \mu) \\
+D^2 = (x - \mu)^T S^{-1} (x - \mu)
+$$
+$$
 \text{ where } \mu \text{ is the mean vector and } S \text{ is the covariance matrix.}
 $$
 
-```{r, echo = FALSE}
+```{r, echo = FALSE, fig.height = 3}
 mahal_plot_normal <- function(df, n_points = 500, cex = .3, xmax = NULL, ymax = NULL, name = "") {
   p <- ncol(df)
   n <- nrow(df)
@@ -151,17 +169,70 @@ mahal_plot_normal(df, n_points = 500, ymax = 300, name = "Original")
 mahal_plot_normal(df_transformed, n_points = 500, ymax = 300, name = "Transformed")
 ```
 
+Although the transformations may not appear to have improved the QQ plot, they did reduce the extremity of the 500 largest Mahalanobis distances, bringing these transactions closer to the bulk of the distribution. This suggests that the transformations mitigated some of the effects of skewness. We therefore will proceed with our analysis under the assumption of multivariate normality, acknowledging that the heavy-tailed nature of the distributions may lead to a higher rate of false positives in our outlier detection.
 
-we will proceed with our analysis under the assumption of multivariate normality, acknowledging that the heavy-tailed nature of the distributions may lead to a higher rate of false positives in our outlier detection.
 
 # Outlier Detection (Potential Fraud Identification)
 
+```{r, echo = FALSE}
+
+# Calculate mahalanobis distance for each point
+
+mu <- colMeans(df)
+S <- cov(df)
+D2 <- mahalanobis(df, mu, S)
+
+# How many observations are outliers?
+n_outliers <- sum(D2 > qchisq(.99, df = 12))
+
+# Get indices of top 10 and 250 highest Mahalanobis distances
+top_250_indices <- order(D2, decreasing = TRUE)[1:250]
+top_10_indices <- order(D2, decreasing = TRUE)[1:10]
+
+# Create table with row numbers and Mahalanobis distances
+top_10_table <- data.frame(
+  Row = top_10_indices,
+  `Mahalanobis Distance` = D2[top_10_indices]
+)
+
+top_250_table <- data.frame(
+  Row_Number = top_250_indices,
+  Mahalanobis_Distance = D2[top_250_indices]
+)
+```
+
+We identify potential fraudulent transactions in the data set by identifying outliers, assuming multivariate normality in the data. As was previously described, after transforming the data, there is still reason to believe that this data is not multivariate normal, but we will move forward with this assumption in order to employ Mahalanobis distance as a method to detect the outliers.
+
+In our case, assuming normality, we know that Mahalanobis Distance follows a $\chi^2_{12}$ distribution. We then say that any record with a Mahalanobis Distance greater than the 99\% quantile of the $\chi^2_{12}$ is an outlier. This method gave us 11739 outliers, much more than we were expecting. Again, after the transformation, there is still skewness and heavy tails, so this result is not entirely unexpected. Using the information we have, however, we believe that the transactions with the largest Mahalanobis Distance have the greatest chance of being fraudulent. Table 1 below shows the top 10 records with the highest Mahalanobis Distance.
+
+```{r, echo = FALSE}
+knitr::kable(top_10_table, caption = "Records with the highest Mahalanobis Distance")
+```
+
 # Discussion
+
+Using Mahalanobis Distance as our outlier detection measure, we found that observation 130,115 had the largest value ($\approx$ 16,233), suggesting it is the most likely fraudulent transaction. In fact, the next largest Mahalanobis Distance was 4,204.83. The cutoff for inclusion among the top 250 potential fraud cases corresponded to a Mahalanobis Distance of 504.76. Across these 250 flagged transactions, the Mahalanobis Distances had a mean of 1,158.05 and a median of 1,078.99, indicating that while most of the suspicious transactions were tightly clustered, the mean was elevated by the extremity of observation 130,115.
+
 
 # Conclusion
 
+The need for accurate fraud detection methods is critical as billions of dollars are lost to fraud in the US every year. Using a dataset of 250,000 financial transactions, we applied data transformations to reduce skewness and demonstrated that the transformed data more closely satisfied the assumptions of a multivariate normal distribution. Under this framework, we employed Mahalanobis Distance to identify outliers and flagged 250 transactions as the most likely to be fraudulent. These transactions are reported in Table 3 of the Appendix.
+
+While we are confident in the validity of our results, future work could focus on additional transformations to further align the data with multivariate normality. Moreover, incorporating complementary approaches—such as PCA or ensemble methods that combine multiple outlier detection techniques—would provide a stronger and more robust basis for identifying potentially fraudulent activity.
+
+\newpage
 
 
+# References
 
 
+# Appendix
 
+```{r, echo = FALSE}
+lambda_df <- data.frame(Variable = paste0("X", 1:ncol(df)), Lambda = lambda_vect)
+knitr::kable(lambda_df, caption = "Yeo-Johnson Lambda Values for Each Variable")
+```
+
+```{r, echo = FALSE}
+knitr::kable(top_250_table, caption = "All 250 Fraudulent Transactions")
+```
